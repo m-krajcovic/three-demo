@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>My first three.js app</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+		<script src="three.js"></script>
+		<script>
+			let scene = new THREE.Scene();
+			const width = window.innerWidth;
+			const height = window.innerHeight;
+
+			const camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 );			
+			
+			let renderer = new THREE.WebGLRenderer();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+
+			let geometry = new THREE.ConeGeometry( 1, 2, 3 );
+			let material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+			let cube = new THREE.Mesh(geometry, material);
+
+			let goalGeometry = new THREE.CircleGeometry(1, 64);
+			let goalMaterial = new THREE.MeshBasicMaterial({color: 0xff0000});
+			let goalCube = new THREE.Mesh(goalGeometry, goalMaterial);
+
+			scene.add(cube);
+			scene.add(goalCube);
+
+			camera.position.z = 5;
+			camera.zoom = 10;
+			camera.updateProjectionMatrix();
+			let movementSpeed = 0.2;
+			let rotationSpeed = 0.1;
+
+			// let degrees = 0;
+			let radius = 1;
+			let degrees = 0;
+
+			let movementVector = {
+				x: 1, y: 0, degrees: 0
+			}
+
+			function movePointByDegrees(degrees, radius) {
+				const radians = 0.0174533 * degrees;
+				return {
+					x: radius * Math.cos(radians),
+					y: radius * Math.sin(radians),
+					degrees: degrees
+				}
+			}
+
+			function getRandomPosition() {
+				return {
+					x: Math.floor(Math.random() * 30 - Math.random() * 30),
+					y: Math.floor(Math.random() * 30 - Math.random() * 30)
+				}
+			}
+
+			function getCubicDistance(x1, y1, x2, y2) {
+				let a = x1 - x2;
+				let b = y1 - y2;
+				return a*a + b*b;
+			}
+
+			function getCubicDistanceFromGoal(point) {
+				return getCubicDistance(goal.x, goal.y, cube.position.x + point.x, cube.position.y + point.y);
+			}
+
+			function indexOfMin(arr) {
+				if (arr.length === 0) {
+					return -1;
+				}
+
+				let min = arr[0];
+				let minIndex = 0;
+				for (let i = 1; i < arr.length; i++) {
+					if (arr[i] < min) {
+						minIndex = i;
+						min = arr[i];
+					}
+				}
+				return minIndex;
+			}
+			
+			let goal = getRandomPosition();
+			goalCube.position.x = goal.x;
+			goalCube.position.y = goal.y;
+			
+			function getNewMovementVector() {
+				const plusVector = movePointByDegrees(movementVector.degrees + 5, radius);
+				const minusVector = movePointByDegrees(movementVector.degrees - 5, radius);
+				const distances = [getCubicDistanceFromGoal(movementVector), getCubicDistanceFromGoal(plusVector), getCubicDistanceFromGoal(minusVector)];
+				const minIndex = indexOfMin([getCubicDistanceFromGoal(movementVector), getCubicDistanceFromGoal(plusVector), getCubicDistanceFromGoal(minusVector)]);
+				// console.log(distances);
+				// console.log(distances[minIndex]);
+				return [movementVector, plusVector, minusVector][minIndex];
+			}
+			let i = 0;
+			function animate() {
+				requestAnimationFrame(animate);
+
+				// update movementVector to follow goal
+				// check which angle is smallest from 3: straight vector, vector to left, vector to right
+				// 
+				movementVector = getNewMovementVector();
+			
+				cube.position.x += movementVector.x * movementSpeed;
+				cube.position.y += movementVector.y * movementSpeed;
+				cube.rotation.z = movementVector.degrees * 0.0174533 - Math.PI/2;
+
+				// const newPos = movePointByDegrees(i * 0.0174533, 10);
+				// i++;
+				// cube.position.x = newPos.x;
+				// cube.position.y = newPos.y;
+				
+
+				if (Math.sqrt(getCubicDistance(goal.x, goal.y, cube.position.x, cube.position.y) < 1)) {
+					goal = getRandomPosition();
+					goalCube.position.x = goal.x;
+					goalCube.position.y = goal.y;
+				}
+
+				// cube.rotation.x += rotationSpeed;
+				// goalCube.rotation.x += rotationSpeed;
+				// cube.rotation.y += rotationSpeed;
+				// goalCube.rotation.y += rotationSpeed;
+				
+				renderer.render(scene, camera);
+			}
+			animate();
+		</script>
+	</body>
+</html>
+
+
+
