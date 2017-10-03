@@ -20,7 +20,7 @@
 
 			var planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 
-			let renderer = new THREE.WebGLRenderer();
+			let renderer = new THREE.WebGLRenderer({antialias: true});
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			document.body.appendChild(renderer.domElement);
 
