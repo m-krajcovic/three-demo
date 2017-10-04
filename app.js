@@ -77,6 +77,7 @@ let mouse = new THREE.Vector2();
 let goal = new THREE.Vector2();
 
 renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
+renderer.domElement.addEventListener('touchmove', onDocumentMouseMove, false);
 window.addEventListener('resize', onWindowResize, false);
 
 function createCone(color) {
@@ -88,9 +89,18 @@ function createCone(color) {
 }
 
 function onDocumentMouseMove(event) {
+    console.log(event);
     event.preventDefault();
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    let mouseX, mouseY;
+    if (event.touches && event.touches.length) {
+    	mouseX = event.touches[0].clientX;
+	mouseY = event.touches[0].clientY;
+    } else {
+    	mouseX = event.clientX;
+	mouseY = event.clientY;
+    }
+    mouse.x = (mouseX / window.innerWidth) * 2 - 1;
+    mouse.y = -(mouseY / window.innerHeight) * 2 + 1;
 }
 
 function onWindowResize() {
