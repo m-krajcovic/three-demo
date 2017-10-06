@@ -1,7 +1,7 @@
 const Follower = (function(mesh, goal, movementSpeed, rotationStep) {
     let movementVector = new THREE.Vector2(0, 1);
     const center = new THREE.Vector2(0, 0);
-    const maxSpeed = 2 * movementSpeed;
+    const maxSpeed = 3 * movementSpeed;
     const defaultSpeed = movementSpeed;
     function getNewMovementVector() {
         const currentVector = movementVector.clone();
@@ -31,7 +31,7 @@ const Follower = (function(mesh, goal, movementSpeed, rotationStep) {
 
                 if (movementVector.equals(newVector) || previousMovementVector.equals(newVector)) {
                     if (movementSpeed < maxSpeed) {
-                        movementSpeed *= 1.03;
+                        movementSpeed *= 1.02;
                         if (movementSpeed > maxSpeed) {
                             movementSpeed = maxSpeed;
                         }
@@ -45,7 +45,9 @@ const Follower = (function(mesh, goal, movementSpeed, rotationStep) {
                 previousMovementVector.copy(movementVector);
                 movementVector.copy(newVector);
                 // mesh.rotation.z = movementVector.angle() - Math.PI/2;
-            }
+            } else {
+	    	movementSpeed = defaultSpeed;
+	    }
         },
 
         position: function() {
@@ -95,6 +97,7 @@ const ShockWave = (function(position, speed, strength, maxSize) {
         next: function() {
             if (sphere.radius < maxRadius) {
                 sphere.radius *= speed;
+		strength /= 1.02;
             } else {
                 done = true;
             }
@@ -106,8 +109,9 @@ const ShockWave = (function(position, speed, strength, maxSize) {
                 if (vectorDistance <= 0) {
                     const pushX = vector.x - sphere.center.x;
                     const pushY = vector.y - sphere.center.y;
-                    vector.x += pushX * strength * ((-1) * vectorDistance/5 + 1);
-                    vector.y += pushY * strength * ((-1) * vectorDistance/5 + 1);
+		    const rootDistance = (-1 * vectorDistance / 5);
+                    vector.x += pushX * strength;// * (rootDistance);
+                    vector.y += pushY * strength;// * (rootDistance);
                 }
             }
         },
@@ -156,7 +160,8 @@ function createCone(color) {
 }
 const shockwaves = [];
 function onDocumentMouseDown(event) {
-    shockwaves.push(new ShockWave(goal, 1.1, 0.1, 60));
+    // position, speed, strength, max radius
+    shockwaves.push(new ShockWave(goal, 1.2, 1, 60));
 }
 
 function onDocumentMouseMove(event) {
