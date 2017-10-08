@@ -3,21 +3,29 @@ const Follower = (function (mesh, goal, movementSpeed, rotationStep) {
     const center = new THREE.Vector2(0, 0);
     const maxSpeed = 2 * movementSpeed;
     const defaultSpeed = movementSpeed;
+    const rotationStepRadians = rotationStep * Math.PI / 180;
 
     function getNewMovementVector() {
+        const goalVector = new THREE.Vector2(goal.x - mesh.position.x, goal.y - mesh.position.y);
+        const goalVectorAngle = goalVector.angle();
         const currentVector = movementVector.clone();
-        const plusVector = movementVector.clone().rotateAround(center, rotationStep * Math.PI / 180);
-        const minusVector = movementVector.clone().rotateAround(center, -rotationStep * Math.PI / 180);
-        const distances = [
-            currentVector.clone().multiplyScalar(movementSpeed).add(mesh.position).distanceToSquared(goal),
-            plusVector.clone().multiplyScalar(movementSpeed).add(mesh.position).distanceToSquared(goal),
-            minusVector.clone().multiplyScalar(movementSpeed).add(mesh.position).distanceToSquared(goal)
-        ];
-        const minIndex = utils.indexOfMin(distances);
-        return [currentVector, plusVector, minusVector][minIndex];
+        const currentVectorAngle = currentVector.angle();
+        const angleDistance = Math.abs(currentVectorAngle - goalVectorAngle);
+        let shorterAngleDistance = angleDistance;
+        if (shorterAngleDistance >= Math.PI) {
+            shorterAngleDistance = 2 * Math.PI - shorterAngleDistance;
+        }
+        if (shorterAngleDistance <= rotationStepRadians) {
+            return currentVector;
+        }
+        let rotationSign = 0;
+        if (angleDistance <= Math.PI) {
+            rotationSign = goalVectorAngle >= currentVectorAngle ? 1 : -1;
+        } else {
+            rotationSign = goalVectorAngle <= currentVectorAngle ? 1 : -1;
+        }
+        return currentVector.rotateAround(center, rotationSign * rotationStepRadians);
     }
-
-    const previousMovementVector = new THREE.Vector2();
 
     return {
         next: function (additionalVectors) {
@@ -27,7 +35,7 @@ const Follower = (function (mesh, goal, movementSpeed, rotationStep) {
                 mesh.position.x += newVector.x * movementSpeed;
                 mesh.position.y += newVector.y * movementSpeed;
 
-                if (movementVector.equals(newVector) || previousMovementVector.equals(newVector)) {
+                if (movementVector.equals(newVector)) {
                     if (movementSpeed < maxSpeed) {
                         movementSpeed *= 1.02;
                         if (movementSpeed > maxSpeed) {
@@ -40,7 +48,6 @@ const Follower = (function (mesh, goal, movementSpeed, rotationStep) {
                         movementSpeed = defaultSpeed;
                     }
                 }
-                previousMovementVector.copy(movementVector);
                 movementVector.copy(newVector);
                 // mesh.rotation.z = movementVector.angle() - Math.PI/2;
             } else {
@@ -94,7 +101,7 @@ const ShockWave = (function (position, speed, strength, strengthDecrese, maxSize
     return {
         next: function () {
             if (sphere.radius < maxRadius) {
-                sphere.radius *= speed;
+                sphere.radius += speed;
                 strength /= strengthDecrese;
             } else {
                 done = true;
@@ -161,7 +168,7 @@ const ShockWave = (function (position, speed, strength, strengthDecrese, maxSize
 
     function onDocumentMouseDown(event) {
         // position, speed, strength, max radius
-        shockwaves.push(new ShockWave(goal, 1.1, 6, 1.02, 100));
+        shockwaves.push(new ShockWave(goal, 1.05, 5, 1.02, 100));
     }
 
     function onDocumentMouseMove(event) {
