@@ -97,7 +97,7 @@ const ShockWave = (function (position, speed, strength, strengthDecrese, maxSize
 
     const maxRadius = maxSize;
     let done = false;
-    const sphere = new THREE.Sphere(new THREE.Vector3(position.x, position.y, 0), 3);
+    const sphere = new THREE.Sphere(new THREE.Vector3(position.x, position.y, 0), 0);
     return {
         next: function () {
             if (sphere.radius < maxRadius) {
@@ -124,6 +124,7 @@ const ShockWave = (function (position, speed, strength, strengthDecrese, maxSize
     }
 });
 
+const app = 
 (function () {
     let scene = new THREE.Scene();
     const width = window.innerWidth;
@@ -153,6 +154,7 @@ const ShockWave = (function (position, speed, strength, strengthDecrese, maxSize
     renderer.domElement.addEventListener('touchmove', onDocumentMouseMove, false);
 
     renderer.domElement.addEventListener('mousedown', onDocumentMouseDown, false);
+    renderer.domElement.addEventListener('mouseup', onDocumentMouseUp, false);
     window.addEventListener('resize', onWindowResize, false);
 
     function createCone(color) {
@@ -166,13 +168,29 @@ const ShockWave = (function (position, speed, strength, strengthDecrese, maxSize
     }
     const shockwaves = [];
 
+    let mouseDownTimeStamp = 0;
+
     function onDocumentMouseDown(event) {
-        // position, speed, strength, max radius
-        shockwaves.push(new ShockWave(goal, 1.05, 5, 1.02, 100));
+        mouseDownTimeStamp = event.timeStamp;
+    }
+
+    let speed = 1;
+    let str = 2.5;
+    let strDec = 1.02;
+    let rad = 100;
+
+    function onDocumentMouseUp(event) {
+        let timeDiff = (event.timeStamp - mouseDownTimeStamp) / 2000;
+        if (timeDiff > 1) timeDiff = 1;
+        timeDiff += 1;
+        // 2 sec max -> 5
+        // 0 sec min -> 1
+        
+        // position, speed, strength, strength decrease, max radius
+        shockwaves.push(new ShockWave(goal, speed, str * timeDiff, strDec, rad));
     }
 
     function onDocumentMouseMove(event) {
-        // console.log(event);
         event.preventDefault();
         let mouseX, mouseY;
         if (event.touches && event.touches.length) {
@@ -212,9 +230,6 @@ const ShockWave = (function (position, speed, strength, strengthDecrese, maxSize
     const followers = [];
     const c1 = new THREE.Color(0xff4e50);
     const c2 = new THREE.Color(0xf9d423);
-    // #ff4e50 → #f9d423
-    // const c1 = new THREE.Color(0xff0000);
-    // const c2 = new THREE.Color(0x0000ff);
 
     function createColorRange(ran) {
         const tmpColor = new THREE.Color();
@@ -259,5 +274,29 @@ const ShockWave = (function (position, speed, strength, strengthDecrese, maxSize
 
         renderer.render(scene, camera);
     }
-    animate()
+    animate();
+
+    return {
+        
+            // let speed = 1;
+            // let str = 5;
+            // let strDec = 1.02;
+            // let rad = 100;
+        speed(val) {
+            if (val) speed = val;
+            return speed;
+        },
+        str(val) {
+            if (val) str = val;
+            return str;
+        },
+        strDec(val) {
+            if (val) strDec = val;
+            return strDec;
+        },
+        rad(val) {
+            if (val) rad = val;
+            return rad;
+        },
+    }
 })();
