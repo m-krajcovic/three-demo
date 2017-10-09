@@ -89,20 +89,48 @@ const Follower = (function (mesh, goal, movementSpeed, rotationStep) {
     }
 });
 
-// create shockwave on position where i clicked
-// every tick, increase radius and check if shockwave contains an object:
-// if it does: move the object away from the position // might be stronger smaller the distance? (check later)
-// if it doesn't: don't do anything
-const ShockWave = (function (position, speed, strength, strengthDecrese, maxSize) {
+const ForcePush = (function (center, direction, width, speed, strength, strengthDecrease, maxSize) {
+    let done = false;
+    const directionAngle = direction.angle();
+    const minDirectionAngle = directionAngle - width;
+    const maxDirectionAngle = directionAngle + width;
+    const sphere = new THREE.Sphere(new THREE.Vector3(center.x, center.y, 0), 0);
+    return {
+        next: function() {
+            if (sphere.radius < maxSize) {
+                sphere.radius += speed;
+                strength /= strengthDecrease;
+            } else {
+                done = true;
+            }
+        },
 
-    const maxRadius = maxSize;
+        pushVector: function(vector) {
+            if (!done) {
+                if (sphere.containsPoint(vector)) {
+                    const v2 = new THREE.Vector2(vector.x, vector.y);
+                    const vectorAngle = v2.sub(center).angle();
+                    if (vectorAngle >= minDirectionAngle && vectorAngle <= maxDirectionAngle) {
+                        const pushVector = new THREE.Vector3(vector.x - sphere.center.x, vector.y - sphere.center.y, 0).normalize().multiplyScalar(strength);
+                        vector.add(pushVector);
+                    }
+                }
+            }
+        },
+        
+        isDone: function () {
+            return done;
+        }
+    }
+});
+const ShockWave = (function (position, speed, strength, strengthDecrease, maxSize) {
     let done = false;
     const sphere = new THREE.Sphere(new THREE.Vector3(position.x, position.y, 0), 0);
     return {
         next: function () {
-            if (sphere.radius < maxRadius) {
+            if (sphere.radius < maxSize) {
                 sphere.radius += speed;
-                strength /= strengthDecrese;
+                strength /= strengthDecrease;
             } else {
                 done = true;
             }
@@ -110,8 +138,7 @@ const ShockWave = (function (position, speed, strength, strengthDecrese, maxSize
 
         pushVector: function (vector) {
             if (!done) {
-                const vectorDistance = sphere.distanceToPoint(vector);
-                if (vectorDistance <= 0) {
+                if (sphere.containsPoint(vector)) {
                     const pushVector = new THREE.Vector3(vector.x - sphere.center.x, vector.y - sphere.center.y, 0).normalize().multiplyScalar(strength);
                     vector.add(pushVector);
                 }
@@ -169,9 +196,11 @@ const app =
     const shockwaves = [];
 
     let mouseDownTimeStamp = 0;
+    let mouseDownPosition = null;
 
     function onDocumentMouseDown(event) {
         mouseDownTimeStamp = event.timeStamp;
+        mouseDownPosition = goal.clone();
     }
 
     let speed = 1;
@@ -180,14 +209,19 @@ const app =
     let rad = 100;
 
     function onDocumentMouseUp(event) {
+        let mouseUpPosition = goal.clone();
         let timeDiff = (event.timeStamp - mouseDownTimeStamp) / 2000;
         if (timeDiff > 1) timeDiff = 1;
         timeDiff += 1;
-        // 2 sec max -> 5
-        // 0 sec min -> 1
-        
-        // position, speed, strength, strength decrease, max radius
-        shockwaves.push(new ShockWave(goal, speed, str * timeDiff, strDec, rad));
+
+        let distance = mouseDownPosition.distanceTo(mouseUpPosition);
+        if (distance >= 2) {
+            const direction = new THREE.Vector2(mouseDownPosition.x - mouseUpPosition.x, mouseDownPosition.y - mouseUpPosition.y);
+            console.log(distance); // radius
+            shockwaves.push(new ForcePush(mouseUpPosition, direction, 0.4, speed, str * 2 * timeDiff, strDec, distance * 2));
+        } else {
+            shockwaves.push(new ShockWave(goal, speed, str * timeDiff, strDec, rad));
+        }
     }
 
     function onDocumentMouseMove(event) {
